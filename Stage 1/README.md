@@ -19,10 +19,8 @@ This stage has two parts submitted together. Both files are in this folder.
 
 | Part | Live URL |
 |------|----------|
-| Stage 1a (todo-card) | [View on Vercel](#) |
-| Stage 1b (Profile_Card) | [View on Vercel](#) |
-
-> Replace `#` with your actual Vercel URLs once deployed.
+| Stage 1a (todo-card) | [View on Vercel](hng-internship-2026.vercel.app/stage%201/todo-card.html) |
+| Stage 1b (Profile_Card) | [View on Vercel](https://hng-internship-2026.vercel.app/Stage%201/Profile_Card.html) |
 
 ---
 
