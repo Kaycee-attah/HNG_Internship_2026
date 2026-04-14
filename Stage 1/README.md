@@ -10,8 +10,8 @@ This stage has two parts submitted together. Both files are in this folder.
 
 | File | Part | Description |
 |------|------|-------------|
-| `stage1a.html` | Stage 1a | Advanced Interactive Todo Card |
-| `stage1b.html` | Stage 1b | Testable Profile Card |
+| `todo-card.html` | Stage 1a | Advanced Interactive Todo Card |
+| `Profile_Card.html` | Stage 1b | Testable Profile Card |
 
 ---
 
