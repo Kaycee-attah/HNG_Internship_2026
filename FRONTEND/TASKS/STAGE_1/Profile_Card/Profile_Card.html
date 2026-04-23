@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile Card — HNG Stage 1b</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #18181f;
+      --surface-2: #22222c;
+      --border: rgba(255,255,255,0.08);
+      --text-primary: #f0eff8;
+      --text-secondary: #9896b0;
+      --text-muted: #605f78;
+      --accent: #6c63ff;
+      --accent-light: rgba(108,99,255,0.15);
+      --success: #34d399;
+      --danger: #ff5d5d;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2.5rem 1rem 4rem;
+      color: var(--text-primary);
+    }
+
+    .page-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== CARD ===== */
+    article[data-testid="test-profile-card"] {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    /* ===== HERO — flex column on mobile, flex ROW on tablet+ ===== */
+    .profile-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 1.75rem 1.5rem 1.25rem;
+      background: linear-gradient(160deg, rgba(108,99,255,0.15) 0%, transparent 65%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Avatar */
+    figure { flex-shrink: 0; margin: 0; text-align: center; }
+
+    img[data-testid="test-user-avatar"] {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      object-fit: cover;
+      background: var(--surface-2);
+      display: block;
+    }
+
+    figcaption { font-size: 10px; color: var(--text-muted); margin-top: 5px; }
+
+    /* Name + role + time block */
+    .profile-intro { text-align: center; }
+
+    h2[data-testid="test-user-name"] {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .profile-role {
+      font-size: 12.5px;
+      color: var(--accent);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .epoch-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    time[data-testid="test-user-time"] {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== BODY ===== */
+    .profile-body { padding: 1.25rem 1.5rem 1.5rem; }
+
+    p[data-testid="test-user-bio"] {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 1.25rem; }
+
+    .section-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 9px;
+    }
+
+    /* ===== SOCIAL LINKS ===== */
+    nav[data-testid="test-user-social-links"] { margin-bottom: 1.25rem; }
+
+    .social-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      list-style: none;
+      padding: 0;
+    }
+
+    .social-list li a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      transition: all 0.15s;
+    }
+
+    .social-list li a:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: var(--accent-light);
+    }
+
+    .social-list li a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 999px;
+    }
+
+    /* ===== HOBBIES + DISLIKES ===== */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    section.list-section {
+      background: var(--surface-2);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    ul[data-testid="test-user-hobbies"],
+    ul[data-testid="test-user-dislikes"] {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .item-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .hobby-dot   { background: var(--success); }
+    .dislike-dot { background: var(--danger); }
+
+    /* ===== RESPONSIVE ===== */
+
+    /* Mobile — stacked, single column */
+    @media (max-width: 599px) {
+      article[data-testid="test-profile-card"] { border-radius: 14px; }
+      h2[data-testid="test-user-name"] { font-size: 19px; }
+      .profile-body { padding: 1rem 1.25rem 1.25rem; }
+      .profile-hero { padding: 1.5rem 1.25rem 1rem; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* Tablet (600px+) — avatar LEFT, name + intro RIGHT */
+    @media (min-width: 600px) {
+      .profile-hero {
+        flex-direction: row;        /* avatar on left, intro on right */
+        align-items: flex-start;
+        gap: 20px;
+        padding: 2rem 2rem 1.5rem;
+      }
+      .profile-intro { text-align: left; }
+    }
+
+    /* Desktop (1024px+) */
+    @media (min-width: 1024px) {
+      article[data-testid="test-profile-card"] { max-width: 600px; }
+      h2[data-testid="test-user-name"] { font-size: 24px; }
+      img[data-testid="test-user-avatar"] { width: 90px; height: 90px; }
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+  <p class="page-label">HNG Frontend — Stage 1b</p>
+
+  <article data-testid="test-profile-card" role="region" aria-label="User profile card">
+
+    <!-- ===== HERO =====
+         Mobile  (<600px): avatar on top, name below — flex column
+         Tablet+ (≥600px): avatar on LEFT, name on RIGHT — flex row
+    ===== -->
+    <div class="profile-hero">
+
+      <figure>
+        <img
+          data-testid="test-user-avatar"
+          src="Display_Img.jpeg"
+          alt="Profile photo of Kaycee Attah, Frontend Developer"
+          width="80"
+          height="80"
+        />
+        <figcaption>Kaycee Attah</figcaption>
+      </figure>
+
+      <div class="profile-intro">
+        <h2 data-testid="test-user-name" aria-label="User name: Kaycee Attah">
+          Kaycee Attah
+        </h2>
+        <span class="profile-role">Frontend Developer · HNG Intern</span>
+
+        <div class="epoch-wrap" aria-label="Current epoch time in milliseconds">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <time
+            data-testid="test-user-time"
+            id="epoch-time"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Current epoch time in milliseconds"
+          ></time>
+          <span aria-hidden="true" style="font-size:11px;color:var(--text-muted)">ms</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== BODY ===== -->
+    <div class="profile-body">
+
+      <p data-testid="test-user-bio">
+        Passionate frontend developer on the HNG internship journey. I love crafting
+        accessible, pixel-perfect interfaces and turning complex problems into clean,
+        elegant UI. Currently levelling up my skills in React, accessibility, and design systems.
+      </p>
+
+      <hr class="divider" />
+
+      <!-- Social Links -->
+      <nav data-testid="test-user-social-links" aria-label="Social media links">
+        <p class="section-label" id="social-label">Connect</p>
+        <ul class="social-list" role="list" aria-labelledby="social-label">
+
+          <li>
+            <a
+              data-testid="test-user-social-twitter"
+              href="https://x.com/KelechiAttah"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Visit Twitter profile (opens in new tab)"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              Twitter
+            </a>
+          </li>
+
+          <li>
+            <a
+              data-testid="test-user-social-github"
+              href="https://github.com/Kaycee-attah"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Visit GitHub profile (opens in new tab)"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
+              GitHub
+            </a>
+          </li>
+
+          <li>
+            <a
+              data-testid="test-user-social-linkedin"
+              href="https://www.linkedin.com/in/kelechi-attah"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Visit LinkedIn profile (opens in new tab)"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/>
+                <circle cx="4" cy="4" r="2"/>
+              </svg>
+              LinkedIn
+            </a>
+          </li>
+
+        </ul>
+      </nav>
+
+      <hr class="divider" />
+
+      <!-- Hobbies + Dislikes -->
+      <div class="two-col">
+
+        <section class="list-section" aria-labelledby="hobbies-label">
+          <p class="section-label" id="hobbies-label">Hobbies</p>
+          <ul data-testid="test-user-hobbies" role="list" aria-label="List of hobbies">
+            <li class="list-item"><span class="item-dot hobby-dot" aria-hidden="true"></span>UI/UX Design</li>
+            <li class="list-item"><span class="item-dot hobby-dot" aria-hidden="true"></span>Open Source</li>
+            <li class="list-item"><span class="item-dot hobby-dot" aria-hidden="true"></span>Photography</li>
+            <li class="list-item"><span class="item-dot hobby-dot" aria-hidden="true"></span>Reading Tech Blogs</li>
+          </ul>
+        </section>
+
+        <section class="list-section" aria-labelledby="dislikes-label">
+          <p class="section-label" id="dislikes-label">Dislikes</p>
+          <ul data-testid="test-user-dislikes" role="list" aria-label="List of dislikes">
+            <li class="list-item"><span class="item-dot dislike-dot" aria-hidden="true"></span>Inaccessible UIs</li>
+            <li class="list-item"><span class="item-dot dislike-dot" aria-hidden="true"></span>Slow page loads</li>
+            <li class="list-item"><span class="item-dot dislike-dot" aria-hidden="true"></span>Poor documentation</li>
+            <li class="list-item"><span class="item-dot dislike-dot" aria-hidden="true"></span>Inline styles chaos</li>
+          </ul>
+        </section>
+
+      </div>
+
+    </div><!-- /profile-body -->
+
+  </article>
+
+  <script>
+    const epochEl = document.getElementById("epoch-time");
+
+    function updateTime() {
+      const now = Date.now();
+      // textContent = raw milliseconds number (what automated tests check)
+      epochEl.textContent = now.toString();
+      // datetime attribute = valid ISO string (proper HTML semantics)
+      epochEl.setAttribute("datetime", new Date(now).toISOString());
+    }
+
+    // Run immediately so value is present at render
+    updateTime();
+    // Refresh every second so it stays accurate
+    setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>

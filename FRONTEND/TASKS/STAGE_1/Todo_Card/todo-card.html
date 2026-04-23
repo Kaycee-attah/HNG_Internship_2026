@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo Card — HNG Stage 1a</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #18181f;
+      --surface-2: #22222c;
+      --surface-3: #2a2a36;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --text-primary: #f0eff8;
+      --text-secondary: #9896b0;
+      --text-muted: #605f78;
+      --accent: #6c63ff;
+      --accent-light: rgba(108,99,255,0.15);
+      --danger: #ff5d5d;
+      --danger-light: rgba(255,93,93,0.12);
+      --warn: #ffbf4d;
+      --warn-light: rgba(255,191,77,0.15);
+      --success: #34d399;
+      --success-light: rgba(52,211,153,0.15);
+      --pending-color: #9896b0;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2.5rem 1rem 4rem;
+      color: var(--text-primary);
+    }
+
+    .page-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== CARD ===== */
+    article#todo-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, opacity 0.3s;
+    }
+
+    /* Priority left-border indicator */
+    #priority-indicator {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+      transition: background 0.25s;
+    }
+    #priority-indicator.high  { background: var(--danger); }
+    #priority-indicator.medium{ background: var(--warn); }
+    #priority-indicator.low   { background: var(--success); }
+
+    article#todo-card.overdue { border-color: rgba(255,93,93,0.35); }
+    article#todo-card.done    { opacity: 0.65; }
+
+    /* card-inner is a flex column so we can control visual order
+       independently from DOM order (which drives keyboard tab order) */
+    .card-inner {
+      padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Visual order (DOM order = keyboard order, which is what matters) */
+    .card-header          { order: 1; margin-bottom: 12px; }
+    #collapsible-section  { order: 2; }
+    .expand-btn           { order: 3; }
+    .badges               { order: 4; margin-bottom: 12px; margin-top: 4px; }
+    .status-row           { order: 5; margin-bottom: 12px; }
+    .date-row             { order: 6; margin-bottom: 13px; }
+    ul#todo-tags          { order: 7; margin-bottom: 4px; }
+    .card-actions         { order: 8; }
+
+    /* ===== HEADER ===== */
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      padding-top: 3px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"]#complete-toggle {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .title-actions {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    h2#todo-title {
+      font-size: 15.5px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-primary);
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      transition: all 0.2s;
+    }
+
+    h2#todo-title.crossed {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .action-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 6px 12px;
+      transition: all 0.15s;
+    }
+    .action-btn:hover { background: var(--surface-2); border-color: var(--border-hover); }
+    .action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .action-btn.del:hover { background: var(--danger-light); border-color: rgba(255,93,93,0.3); color: var(--danger); }
+
+    /* ===== DESCRIPTION ===== */
+    #todo-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 13px;
+      word-break: break-word;
+    }
+
+    /* ===== COLLAPSIBLE ===== */
+    #collapsible-section {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    #collapsible-section.collapsed { max-height: 52px; }
+    #collapsible-section.expanded  { max-height: 600px; }
+
+    .expand-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--accent);
+      padding: 2px 0 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .expand-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+    .expand-btn svg { transition: transform 0.25s; }
+    .expand-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+    /* ===== BADGES ===== */
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .bdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    .p-high   { background: var(--danger-light); color: #ff8a8a; }
+    .p-high   .bdot { background: var(--danger); }
+    .p-medium { background: var(--warn-light);   color: var(--warn); }
+    .p-medium .bdot { background: var(--warn); }
+    .p-low    { background: var(--success-light);color: var(--success); }
+    .p-low    .bdot { background: var(--success); }
+
+    .s-pending  { background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border); }
+    .s-inprog   { background: var(--accent-light); color: #a09dff; }
+    .s-done     { background: var(--success-light); color: var(--success); }
+
+    /* ===== STATUS CONTROL ===== */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .status-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    select#status-control {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--surface-2);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 28px 4px 10px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239896b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+      transition: border-color 0.15s;
+    }
+    select#status-control:focus { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+    select#status-control:hover { border-color: var(--border-hover); }
+
+    /* ===== DATE / TIME ROW ===== */
+    .date-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 13px;
+    }
+
+    .date-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .ddot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); }
+
+    #time-remaining { font-size: 12px; font-weight: 600; }
+    .t-over { color: var(--danger); }
+    .t-soon { color: var(--warn); }
+    .t-ok   { color: var(--accent); }
+    .t-done { color: var(--success); }
+
+    #overdue-indicator {
+      display: none;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--danger-light);
+      color: var(--danger);
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,93,93,0.25);
+    }
+    #overdue-indicator.visible { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* ===== TAGS ===== */
+    ul#todo-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+      padding: 0;
+      margin-bottom: 4px;
+    }
+
+    ul#todo-tags li span {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      letter-spacing: 0.02em;
+    }
+
+    /* ===== EDIT FORM ===== */
+    #edit-form {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #edit-form.visible { display: flex; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      background: var(--surface-2);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 12px;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.6;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+
+    .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6);
+      cursor: pointer;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-save, .btn-cancel {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 18px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .btn-save {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-save:hover { background: #5750e8; }
+    .btn-save:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .btn-cancel {
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      border-color: var(--border);
+    }
+    .btn-cancel:hover { background: var(--surface-3); border-color: var(--border-hover); }
+    .btn-cancel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ===== RESPONSIVENESS ===== */
+    @media (max-width: 520px) {
+      article#todo-card { border-radius: 12px; }
+      .card-inner { padding: 1.25rem 1.25rem 1.25rem 1.5rem; }
+      #edit-form { padding: 1.25rem 1.25rem 1.25rem 1.5rem; }
+    }
+
+    @media (min-width: 768px) {
+      .badges { flex-wrap: nowrap; }
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+  <p class="page-label">HNG Frontend — Stage 1a</p>
+
+  <article data-testid="test-todo-card" id="todo-card" role="region" aria-label="Todo task card">
+
+    <!-- Priority left-border indicator -->
+    <div data-testid="test-todo-priority-indicator" id="priority-indicator" class="high" aria-hidden="true"></div>
+
+    <!-- ===== VIEW MODE ===== -->
+    <div class="card-inner" id="view-mode">
+
+      <!-- Header: checkbox + title + edit/delete -->
+      <div class="card-header">
+        <label class="toggle-label" for="complete-toggle" aria-label="Toggle task completion">
+          <input
+            type="checkbox"
+            id="complete-toggle"
+            data-testid="test-todo-complete-toggle"
+            aria-label="Mark task as complete"
+          />
+        </label>
+        <div class="title-actions">
+          <h2 data-testid="test-todo-title" id="todo-title">Design HNG Todo Card Component</h2>
+        </div>
+      </div>
+
+      <!-- STATUS CONTROL — DOM position 2 so keyboard order is: checkbox(1) → status-control(2) → expand-toggle(3) → edit(4) → delete(5) -->
+      <!-- Visually rendered after badges via CSS order:5 -->
+      <div class="status-row">
+        <span class="status-label" id="status-control-label">Status:</span>
+        <select
+          data-testid="test-todo-status-control"
+          id="status-control"
+          aria-labelledby="status-control-label"
+          aria-label="Change task status"
+        >
+          <option value="Pending">Pending</option>
+          <option value="In Progress" selected>In Progress</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+
+      <!-- Collapsible description — DOM position 3, expand-toggle is 3rd focusable -->
+      <div data-testid="test-todo-collapsible-section" id="collapsible-section" class="collapsed" aria-labelledby="expand-toggle">
+        <p data-testid="test-todo-description" id="todo-description">
+          Build a fully interactive, accessible, stateful todo card with edit mode, status transitions, priority changes, expand/collapse behavior, and dynamic time handling for the HNG Stage 1a submission. This description is intentionally long to demonstrate the expand/collapse functionality working correctly.
+        </p>
+      </div>
+      <button
+        data-testid="test-todo-expand-toggle"
+        id="expand-toggle"
+        class="expand-btn"
+        aria-expanded="false"
+        aria-controls="collapsible-section"
+      >
+        Show more
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <!-- Priority + Status badges (visual only, not focusable) -->
+      <div class="badges">
+        <span
+          data-testid="test-todo-priority"
+          id="priority-badge"
+          class="badge p-high"
+          aria-label="Priority: High"
+          role="status"
+        >
+          <span class="bdot" aria-hidden="true"></span>
+          High
+        </span>
+        <span
+          data-testid="test-todo-status"
+          id="status-badge"
+          class="badge s-inprog"
+          aria-label="Status: In Progress"
+          role="status"
+        >
+          In Progress
+        </span>
+      </div>
+
+      <!-- Due date + time remaining + overdue -->
+      <div class="date-row">
+        <time data-testid="test-todo-due-date" id="due-date-display" datetime="" class="date-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span id="due-date-text"></span>
+        </time>
+        <span class="ddot" aria-hidden="true"></span>
+        <time
+          data-testid="test-todo-time-remaining"
+          id="time-remaining"
+          aria-live="polite"
+          aria-atomic="true"
+        ></time>
+        <span
+          data-testid="test-todo-overdue-indicator"
+          id="overdue-indicator"
+          role="status"
+          aria-label="Task is overdue"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Overdue
+        </span>
+      </div>
+
+      <!-- Tags -->
+      <ul data-testid="test-todo-tags" id="todo-tags" role="list" aria-label="Task tags">
+        <li><span data-testid="test-todo-tag-work">#work</span></li>
+        <li><span data-testid="test-todo-tag-urgent">#urgent</span></li>
+        <li><span data-testid="test-todo-tag-design">#design</span></li>
+      </ul>
+
+      <!-- Action buttons — placed after tags so tab order is: checkbox → status → expand → edit → delete -->
+      <div class="card-actions">
+        <button data-testid="test-todo-edit-button" id="edit-btn" class="action-btn" aria-label="Edit task">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button data-testid="test-todo-delete-button" class="action-btn del" aria-label="Delete task" onclick="alert('Delete clicked')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+          Delete
+        </button>
+      </div>
+
+    </div><!-- /card-inner -->
+
+    <!-- ===== EDIT FORM ===== -->
+    <form
+      data-testid="test-todo-edit-form"
+      id="edit-form"
+      aria-label="Edit task form"
+      onsubmit="return false"
+    >
+      <div class="form-group">
+        <label for="edit-title-input">Title</label>
+        <input
+          type="text"
+          data-testid="test-todo-edit-title-input"
+          id="edit-title-input"
+          placeholder="Task title"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="edit-description-input">Description</label>
+        <textarea
+          data-testid="test-todo-edit-description-input"
+          id="edit-description-input"
+          placeholder="Task description"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-priority-select">Priority</label>
+        <select data-testid="test-todo-edit-priority-select" id="edit-priority-select">
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High" selected>High</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-due-date-input">Due Date</label>
+        <input
+          type="date"
+          data-testid="test-todo-edit-due-date-input"
+          id="edit-due-date-input"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="button" data-testid="test-todo-save-button" class="btn-save" id="save-btn">Save changes</button>
+        <button type="button" data-testid="test-todo-cancel-button" class="btn-cancel" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+
+  </article>
+
+  <script>
+    // ===== STATE =====
+    let state = {
+      title: "Design HNG Todo Card Component",
+      description: "Build a fully interactive, accessible, stateful todo card with edit mode, status transitions, priority changes, expand/collapse behavior, and dynamic time handling for the HNG Stage 1a submission. This description is intentionally long to demonstrate the expand/collapse functionality working correctly.",
+      priority: "High",
+      status: "In Progress",
+      dueDate: new Date("2026-04-17T23:59:00"),
+      completed: false
+    };
+
+    let savedState = { ...state };
+    let timeInterval = null;
+
+    // ===== ELEMENTS =====
+    const card          = document.getElementById("todo-card");
+    const titleEl       = document.getElementById("todo-title");
+    const descEl        = document.getElementById("todo-description");
+    const priorityBadge = document.getElementById("priority-badge");
+    const priorityIndicator = document.getElementById("priority-indicator");
+    const statusBadge   = document.getElementById("status-badge");
+    const statusControl = document.getElementById("status-control");
+    const checkbox      = document.getElementById("complete-toggle");
+    const dueDateDisplay= document.getElementById("due-date-display");
+    const dueDateText   = document.getElementById("due-date-text");
+    const timeRemaining = document.getElementById("time-remaining");
+    const overdueEl     = document.getElementById("overdue-indicator");
+    const editBtn       = document.getElementById("edit-btn");
+    const editForm      = document.getElementById("edit-form");
+    const expandToggle  = document.getElementById("expand-toggle");
+    const collapsible   = document.getElementById("collapsible-section");
+    const editTitleInput= document.getElementById("edit-title-input");
+    const editDescInput = document.getElementById("edit-description-input");
+    const editPriSelect = document.getElementById("edit-priority-select");
+    const editDateInput = document.getElementById("edit-due-date-input");
+    const saveBtn       = document.getElementById("save-btn");
+    const cancelBtn     = document.getElementById("cancel-btn");
+
+    // ===== RENDER =====
+    function render() {
+      // Title
+      titleEl.textContent = state.title;
+      titleEl.classList.toggle("crossed", state.completed);
+
+      // Description
+      descEl.textContent = state.description;
+
+      // Priority badge
+      const pMap = {
+        High:   ["p-high",   "Priority: High"],
+        Medium: ["p-medium", "Priority: Medium"],
+        Low:    ["p-low",    "Priority: Low"]
+      };
+      const [pClass, pLabel] = pMap[state.priority];
+      priorityBadge.className = `badge ${pClass}`;
+      priorityBadge.setAttribute("aria-label", pLabel);
+      priorityBadge.innerHTML = `<span class="bdot" aria-hidden="true"></span>${state.priority}`;
+
+      // Priority indicator bar
+      priorityIndicator.className = state.priority.toLowerCase();
+
+      // Status badge
+      const sMap = {
+        "Pending":     ["s-pending", "Status: Pending"],
+        "In Progress": ["s-inprog",  "Status: In Progress"],
+        "Done":        ["s-done",    "Status: Done"]
+      };
+      const [sClass, sLabel] = sMap[state.status];
+      statusBadge.className = `badge ${sClass}`;
+      statusBadge.setAttribute("aria-label", sLabel);
+      statusBadge.textContent = state.status;
+
+      // Status control dropdown
+      statusControl.value = state.status;
+
+      // Checkbox
+      checkbox.checked = state.completed;
+
+      // Card state classes
+      card.classList.toggle("done", state.completed);
+
+      // Due date display
+      const opts = { month: "short", day: "numeric", year: "numeric" };
+      dueDateText.textContent = "Due " + state.dueDate.toLocaleDateString("en-US", opts);
+      dueDateDisplay.setAttribute("datetime", state.dueDate.toISOString());
+
+      // Time
+      updateTime();
+    }
+
+    // ===== TIME =====
+    function updateTime() {
+      if (state.status === "Done") {
+        timeRemaining.textContent = "Completed";
+        timeRemaining.className = "t-done";
+        overdueEl.classList.remove("visible");
+        card.classList.remove("overdue");
+        return;
+      }
+
+      const diff = state.dueDate - Date.now();
+      let text, cls;
+
+      if (diff <= 0) {
+        const abs = Math.abs(diff);
+        const totalMins = Math.floor(abs / 60000);
+        const h = Math.floor(abs / 3600000);
+        const m = Math.floor((abs % 3600000) / 60000);
+        const d = Math.floor(h / 24);
+
+        if (totalMins < 1)   { text = "Due now!"; }
+        else if (h === 0)    { text = `Overdue by ${m} min`; }
+        else if (h < 24)     { text = `Overdue by ${h}h ${m}m`; }
+        else                  { text = `Overdue by ${d} day${d > 1 ? "s" : ""}`; }
+
+        cls = "t-over";
+        overdueEl.classList.add("visible");
+        card.classList.add("overdue");
+      } else {
+        overdueEl.classList.remove("visible");
+        card.classList.remove("overdue");
+
+        const totalMins = Math.floor(diff / 60000);
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const d = Math.floor(diff / 86400000);
+
+        if (totalMins < 60)  { text = `Due in ${totalMins} min`; cls = "t-over"; }
+        else if (h < 24)     { text = `Due in ${h}h ${m}m`; cls = "t-soon"; }
+        else if (d === 1)    { text = "Due tomorrow"; cls = "t-soon"; }
+        else                  { text = `Due in ${d} days`; cls = "t-ok"; }
+      }
+
+      timeRemaining.textContent = text;
+      timeRemaining.className = cls;
+    }
+
+    clearInterval(timeInterval);
+    timeInterval = setInterval(updateTime, 30000);
+
+    // ===== EXPAND / COLLAPSE =====
+    expandToggle.addEventListener("click", () => {
+      const isExpanded = expandToggle.getAttribute("aria-expanded") === "true";
+      expandToggle.setAttribute("aria-expanded", String(!isExpanded));
+      collapsible.classList.toggle("collapsed", isExpanded);
+      collapsible.classList.toggle("expanded", !isExpanded);
+      expandToggle.innerHTML = isExpanded
+        ? `Show more <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`
+        : `Show less <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>`;
+    });
+
+    // ===== STATUS CONTROL =====
+    statusControl.addEventListener("change", () => {
+      state.status = statusControl.value;
+      state.completed = state.status === "Done";
+      render();
+    });
+
+    // ===== CHECKBOX =====
+    checkbox.addEventListener("change", () => {
+      state.completed = checkbox.checked;
+      state.status = state.completed ? "Done" : "Pending";
+      render();
+    });
+
+    // ===== EDIT MODE =====
+    function openEdit() {
+      savedState = { ...state };
+      editTitleInput.value = state.title;
+      editDescInput.value  = state.description;
+      editPriSelect.value  = state.priority;
+      // Format date as YYYY-MM-DD for input
+      const d = state.dueDate;
+      const yyyy = d.getFullYear();
+      const mm   = String(d.getMonth() + 1).padStart(2, "0");
+      const dd   = String(d.getDate()).padStart(2, "0");
+      editDateInput.value  = `${yyyy}-${mm}-${dd}`;
+      editForm.classList.add("visible");
+      editTitleInput.focus();
+    }
+
+    function closeEdit() {
+      editForm.classList.remove("visible");
+      editBtn.focus();
+    }
+
+    editBtn.addEventListener("click", openEdit);
+
+    saveBtn.addEventListener("click", () => {
+      const newDate = new Date(editDateInput.value + "T23:59:00");
+      state.title       = editTitleInput.value.trim() || state.title;
+      state.description = editDescInput.value.trim() || state.description;
+      state.priority    = editPriSelect.value;
+      state.dueDate     = isNaN(newDate) ? state.dueDate : newDate;
+      render();
+      closeEdit();
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      state = { ...savedState };
+      render();
+      closeEdit();
+    });
+
+    // ===== INIT =====
+    render();
+  </script>
+</body>
+</html>
